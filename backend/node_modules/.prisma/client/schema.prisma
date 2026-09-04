@@ -1,0 +1,69 @@
+// Prisma Schema for Store Rating Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  NORMAL_USER
+  STORE_OWNER
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(60)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash")
+  address      String?  @db.VarChar(400)
+  role         Role     @default(NORMAL_USER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  ratings Rating[]
+  store   Store?   @relation("StoreOwner")
+
+  @@index([role], name: "idx_users_role")
+  @@map("users")
+}
+
+model Store {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(60)
+  email     String   @unique @db.VarChar(255)
+  address   String?  @db.VarChar(400)
+  ownerId   Int?     @unique @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  owner   User?    @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  ratings Rating[]
+
+  @@index([name], name: "idx_stores_name")
+  @@map("stores")
+}
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  storeId   Int      @map("store_id")
+  rating    Int      @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storeId], name: "unique_user_store_rating")
+  @@index([storeId], name: "idx_ratings_store_id")
+  @@index([userId], name: "idx_ratings_user_id")
+  @@map("ratings")
+}

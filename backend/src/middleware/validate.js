@@ -1,0 +1,22 @@
+const { validationResult } = require('express-validator');
+
+/**
+ * Middleware: Run express-validator checks and return 422 with field-level errors
+ */
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({
+      success: false,
+      message: 'Validation failed.',
+      errors: errors.array().map((err) => ({
+        field: err.path,
+        message: err.msg,
+        value: err.value,
+      })),
+    });
+  }
+  next();
+};
+
+module.exports = { validate };
